@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/NADIR_sick_genotypes.vcf
+/NADIR_sick_full-004.vcf
+/NADIR_healthy_genotypes.csv
+/NADIR_sick_genotypes.csv
+/NADIR_healthy_genotypes.vcf
+/NADIR_healthy_full-003.vcf
