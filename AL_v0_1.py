@@ -1,3 +1,11 @@
+'''
+author's:
+@L-daria
+@Desert_Fox_Fenek
+@Michello077
+'''
+
+
 import os
 from os import remove
 import pandas as pd
@@ -44,6 +52,23 @@ def import_data_h(name):
 
         batch_num += 1
 
+    data_h.rename(columns = {'X238':'X182'})
+    data_h.rename(columns = {'Chr1':'ChrCH'})
+
+#to do 'NADIR_sick_genotypes.csv'
+def merg_import(name): 
+    df = pd.DataFrame()
+    ch_size = 500000
+    batch_num = 1
+
+    for chunk in pd.read_csv(name,chunksize = ch_size, low_memory = False):
+        chunk.to_csv('chunk' + str(batch_num)+'.csv', index = False)
+
+        df = pd.read_csv('chunk' + str(batch_num)+'.csv',low_memory=False)
+        df.dropna('Chr1')
+
+        data_h = pd.merge(data_h, df, how='inner', on=['X182'])
+
 def clear():
     _ = os.call('clear' if os.name =='posix' else 'cls')
 
@@ -74,6 +99,10 @@ if __name__ == "__main__":
     data_h.rename(columns = {'X238':'X182'})
     data_h.rename(columns = {'Chr1':'ChrCH'})
     
+
+    #zbior_testowy = pd.merge(healthy, sick, how='inner', on=['X182']).drop(columns = ['ChrCH']).rename(columns = {'ChrZD':'Chr'})
+
+
     for item in header_razem:
         data_s = data_s.replace({item:{'2/2': np.NAN, '0/2' : np.NAN,'1/2' : np.NAN}}).dropna()
     
