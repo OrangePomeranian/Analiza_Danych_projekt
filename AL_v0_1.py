@@ -5,7 +5,7 @@ author's:
 @Michello077
 '''
 
-
+from itertools import zip_longest
 import os
 from os import remove
 import pandas as pd
@@ -14,60 +14,35 @@ from scipy.stats import chi2_contingency
 from scipy.stats import chisquare
 import numpy as np
 
-def import_data_s(name):
-    global data_s
-    
-    data_s = pd.DataFrame()
-    ch_size = 500000
+#import danych
+def import_data(name_s,name_h):
+
+    global data
+    data = pd.DataFrame()
+    ch_size = 750000
     batch_num = 1
 
     #dzielimy nasz duzy plik na mniejsze fragmenty
-    for chunk in pd.read_csv(name,chunksize = ch_size, low_memory=False):
-        chunk.to_csv('chunk_s'+str(batch_num)+'.csv', index = False)
+    for chunk_s,chunk_h in zip(pd.read_csv(name_s,chunksize = ch_size,low_memory=False),pd.read_csv(name_h,chunksize = ch_size,low_memory=False)):
+        chunk_s.to_csv('chunk_s'+str(batch_num)+'.csv', index = False)
+        chunk_h.to_csv('chunk_h'+str(batch_num)+'.csv', index = False)
 
-        df = pd.read_csv('chunk_s'+str(batch_num)+'.csv', low_memory=False)
-        data_s = pd.concat([data_s,df])
+        df_s = pd.read_csv('chunk_s'+str(batch_num)+'.csv', low_memory=False)
+        df_h = pd.read_csv('chunk_h'+str(batch_num)+'.csv', low_memory=False)
+
+        df_h.rename(columns = {'X238':'X182'}, inplace = True)
+        df_s.drop('Chr1',axis = 1, inplace = True)
+
+        df_h = pd.merge(df_h, df_s, how='inner', on = 'X182')
+        data = pd.concat([data,df_h])
+
+        del df_h
+        del df_s
 
         remove('chunk_s'+str(batch_num)+'.csv')
-
-        batch_num += 1
-
-
-#import danych ze zdrowymi osobnikami
-def import_data_h(name):
-
-    global data_h
-    data_h = pd.DataFrame()
-    ch_size = 500000
-    batch_num = 1
-
-    #dzielimy nasz duzy plik na mniejsze fragmenty
-    for chunk in pd.read_csv(name,chunksize = ch_size,low_memory=False):
-        chunk.to_csv('chunk_h'+str(batch_num)+'.csv', index = False)
-
-        df = pd.read_csv('chunk_h'+str(batch_num)+'.csv', low_memory=False)
-        data_h = pd.concat([data_h,df])
-
         remove('chunk_h'+str(batch_num)+'.csv')
 
         batch_num += 1
-
-    data_h.rename(columns = {'X238':'X182'})
-    data_h.rename(columns = {'Chr1':'ChrCH'})
-
-#to do 'NADIR_sick_genotypes.csv'
-def merg_import(name): 
-    df = pd.DataFrame()
-    ch_size = 500000
-    batch_num = 1
-
-    for chunk in pd.read_csv(name,chunksize = ch_size, low_memory = False):
-        chunk.to_csv('chunk' + str(batch_num)+'.csv', index = False)
-
-        df = pd.read_csv('chunk' + str(batch_num)+'.csv',low_memory=False)
-        df.dropna('Chr1')
-
-        data_h = pd.merge(data_h, df, how='inner', on=['X182'])
 
 def clear():
     _ = os.call('clear' if os.name =='posix' else 'cls')
@@ -76,45 +51,30 @@ if __name__ == "__main__":
 
     print("Import danych...")
 
-    load_data_th1 = threading.Thread(target=import_data_h, args=('NADIR_healthy_genotypes.csv',))
-    load_data_th2 = threading.Thread(target=import_data_s, args=('NADIR_sick_genotypes.csv',))
-
-    load_data_th1.start()
-    load_data_th2.start()
-
-    load_data_th1.join()
-    load_data_th2.join()
+    import_data('NADIR_sick_genotypes.csv','NADIR_healthy_genotypes.csv')
 
     print("Zaimportowano")
 
-    print(data_s.head())
-    print(data_h.head())
+    print(data.head())
 
-    input()
+    #do poprawy czasowo
+    for item in data:
+        data = data.replace({item:{'2/2': np.NAN, '0/2' : np.NAN,'1/2' : np.NAN}}).dropna()
 
-    header_zdrowy = ['X1.1ZD', 'X1.1.1ZD', 'X1.1.2ZD', 'X0.1ZD', 'X0.1.1ZD', 'X1.1.3ZD', 'X0.1.2ZD', 'X1.1.4ZD', 'X1.1.5ZD', 'X1.1.6ZD', 'X1.1.7ZD', 'X1.1.8ZD', 'X1.1.9ZD', 'X1.1.10ZD', 'X1.1.11ZD', 'X1.1.12ZD']
-    header_chory = ['X1.1CH', 'X1.1.1CH', 'X1.1.2CH', 'X0.1CH', 'X0.1.1CH', 'X1.1.3CH', 'X0.1.2CH', 'X1.1.4CH', 'X1.1.5CH', 'X1.1.6CH', 'X1.1.7CH', 'X1.1.8CH', 'X1.1.9CH', 'X1.1.10CH', 'X1.1.11CH', 'X1.1.12CH']
-    header_razem = header_zdrowy + header_chory
-
-    data_h.rename(columns = {'X238':'X182'})
-    data_h.rename(columns = {'Chr1':'ChrCH'})
+    print("Zmieniono dane")
     
+    data = data.groupby(by = 'Chr1')
 
-    #zbior_testowy = pd.merge(healthy, sick, how='inner', on=['X182']).drop(columns = ['ChrCH']).rename(columns = {'ChrZD':'Chr'})
-
-
-    for item in header_razem:
-        data_s = data_s.replace({item:{'2/2': np.NAN, '0/2' : np.NAN,'1/2' : np.NAN}}).dropna()
-    
-    data_s = data_s.groupby(by = 'Chr')
+    print("Generowaie wynikow...")
 
     wynik = pd.DataFrame()
     lista = ['0/0','0/1','1/1']
-    for l in data_s:
+    for l in data:
+        print(l)
         y = pd.DataFrame(l[1])
         for row in range(0,len(y)): 
-            chore = pd.DataFrame(y.iloc[row].iloc[2:18].value_counts()).reset_index()
-            zdrowe = pd.DataFrame(y.iloc[row].iloc[18:].value_counts()).reset_index()
+            chore = pd.DataFrame(y.iloc[row].iloc[3:19].value_counts()).reset_index()
+            zdrowe = pd.DataFrame(y.iloc[row].iloc[19:].value_counts()).reset_index()
             zdrowe.columns = ['genotyp', 'ilosc']
             chore.columns = ['genotyp', 'ilosc'] 
         
@@ -122,18 +82,21 @@ if __name__ == "__main__":
                 for i in lista:
                     n = len(zdrowe.loc[zdrowe['genotyp'] == i])
                     if n == 0:
-                        data_s = [[i,0]]
-                        df = pd.DataFrame(data_s,columns=['genotyp','ilosc'])
-                        zdrowe = pd.concat([zdrowe,df])      
+                        data = [[i,0]]
+                        df = pd.DataFrame(data,columns=['genotyp','ilosc'])
+                        zdrowe = pd.concat([zdrowe,df])
                     
             if len(chore) != 3:
                 for i in lista:
                     n = len(chore.loc[chore['genotyp'] == i])
                     if n == 0:
-                        data_s = [[i,0]]
-                        df = pd.DataFrame(data_s,columns=['genotyp','ilosc'])
+                        data = [[i,0]]
+                        df = pd.DataFrame(data,columns=['genotyp','ilosc'])
                         chore = pd.concat([chore,df])
-        
+            
+            print(zdrowe) # to zle
+            print(chore) #liczy dobrze
+
             zdrowe = zdrowe.sort_values(by = 'genotyp')
             chore = chore.sort_values(by = 'genotyp')
             zdrowe = zdrowe['ilosc'].reset_index(drop = True)
