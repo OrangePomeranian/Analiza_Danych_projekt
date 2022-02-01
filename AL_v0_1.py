@@ -7,12 +7,14 @@ author's:
 
 from itertools import zip_longest
 import os
-from os import remove
+from os import cpu_count, remove
 import pandas as pd
 import threading
 from scipy.stats import chi2_contingency
 from scipy.stats import chisquare
 import numpy as np
+import multiprocessing
+
 
 #import danych
 def import_data(name_s,name_h):
@@ -47,15 +49,29 @@ def import_data(name_s,name_h):
 def clear():
     _ = os.call('clear' if os.name =='posix' else 'cls')
 
-if __name__ == "__main__":
+def replace_to_Nan(nr_line,data):
+    data = data.replace({nr_line:{'2/2': np.NAN, '0/2' : np.NAN,'1/2' : np.NAN}}).dropna()
 
+if __name__ == "__main__":
+    n_cores = multiprocessing.cpu_count()
+
+    print("wykryto jednostek logicznych: ",n_cores)
     print("Import danych...")
 
     import_data('NADIR_sick_genotypes.csv','NADIR_healthy_genotypes.csv')
-
     print("Zaimportowano")
 
     print(data.head())
+
+    #th_list = []
+    #for nr_line in range(0,data.shape[0]):
+    #    for index in range(2):
+    #        th = threading.Thread(target=replace_to_Nan, args=(nr_line+index, data))
+    #        th_list.append(th)
+    #        th.start()
+
+    #    for index,th in enumerate(th_list):
+    #        th.join()
 
     #do poprawy czasowo
     for item in data:
@@ -69,12 +85,14 @@ if __name__ == "__main__":
 
     wynik = pd.DataFrame()
     lista = ['0/0','0/1','1/1']
+    in_t = 1
+    tt = data.shape[0]
     for l in data:
         print(l)
         y = pd.DataFrame(l[1])
         for row in range(0,len(y)): 
             chore = pd.DataFrame(y.iloc[row].iloc[3:19].value_counts()).reset_index()
-            zdrowe = pd.DataFrame(y.iloc[row].iloc[19:].value_counts()).reset_index()
+            zdrowe = pd.DataFrame(y.iloc[row].iloc[21:].value_counts()).reset_index()
             zdrowe.columns = ['genotyp', 'ilosc']
             chore.columns = ['genotyp', 'ilosc'] 
         
@@ -94,8 +112,8 @@ if __name__ == "__main__":
                         df = pd.DataFrame(data,columns=['genotyp','ilosc'])
                         chore = pd.concat([chore,df])
             
-            print(zdrowe) # to zle
-            print(chore) #liczy dobrze
+            #print(zdrowe)
+            #print(chore)
 
             zdrowe = zdrowe.sort_values(by = 'genotyp')
             chore = chore.sort_values(by = 'genotyp')
@@ -107,22 +125,28 @@ if __name__ == "__main__":
             test3 = [[zdrowe[1] + zdrowe[2], zdrowe[0]], [chore[1]+ chore[2], chore[0]]]
         
             if (test1[0][1] == 0 and test1[1][1] == 0) or (test1[1][0] == 0 and test1[0][0] == 0):
+                p1 = 1
                 pass
             else:
-                p1 = chi2_contingency(test1)[1]
+                p1 = chi2_contingency(test1, correction=False)[1]
             
             if (test2[0][1] == 0 and test2[1][1] == 0) or (test2[1][0] == 0 and test2[0][0] == 0):
                 pass
+                p2 = 1
             else:
-                p2 = chi2_contingency(test2)[1]            
+                p2 = chi2_contingency(test2, correction=False)[1]            
             
             if (test3[0][1] == 0 and test3[1][1] == 0) or (test3[1][0] == 0 and test3[0][0] == 0):
                 pass
+                p3 = 1
             else:
-                p3 = chi2_contingency(test3)[1]            
-            
+                p3 = chi2_contingency(test3, correction=False)[1]            
+               
 
             if p1 < 0.05 or p2 < 0.05 or p3 < 0.05:
-            
                 wynik = pd.concat([wynik,pd.DataFrame([l[0]],[1])])
+
+        if in_t%100000 == 0:
+            print("Stan sprawdzania",in_t,tt)
+        in_t += 1
     print(wynik.value_counts())
