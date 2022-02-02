@@ -6,6 +6,7 @@ author's:
 '''
 
 from itertools import zip_longest
+from multiprocessing import process
 import os
 from os import cpu_count, remove
 import pandas as pd
@@ -14,6 +15,7 @@ from scipy.stats import chi2_contingency
 from scipy.stats import chisquare
 import numpy as np
 import multiprocessing
+from time import perf_counter
 
 
 #import danych
@@ -49,49 +51,17 @@ def import_data(name_s,name_h):
 def clear():
     _ = os.call('clear' if os.name =='posix' else 'cls')
 
-def replace_to_Nan(nr_line,data):
-    data = data.replace({nr_line:{'2/2': np.NAN, '0/2' : np.NAN,'1/2' : np.NAN}}).dropna()
-
-if __name__ == "__main__":
-    n_cores = multiprocessing.cpu_count()
-
-    print("wykryto jednostek logicznych: ",n_cores)
-    print("Import danych...")
-
-    import_data('NADIR_sick_genotypes.csv','NADIR_healthy_genotypes.csv')
-    print("Zaimportowano")
-
-    print(data.head())
-
-    #th_list = []
-    #for nr_line in range(0,data.shape[0]):
-    #    for index in range(2):
-    #        th = threading.Thread(target=replace_to_Nan, args=(nr_line+index, data))
-    #        th_list.append(th)
-    #        th.start()
-
-    #    for index,th in enumerate(th_list):
-    #        th.join()
-
-    #do poprawy czasowo
-    for item in data:
-        data = data.replace({item:{'2/2': np.NAN, '0/2' : np.NAN,'1/2' : np.NAN}}).dropna()
-
-    print("Zmieniono dane")
-    
-    data = data.groupby(by = 'Chr1')
-
-    print("Generowaie wynikow...")
-
+def chunk_al(name):
     wynik = pd.DataFrame()
+
+    df_p = pd.read_csv(name, low_memory=False)
+
+    df_p = df_p.groupby(by = 'Chr1')
     lista = ['0/0','0/1','1/1']
-    in_t = 1
-    tt = data.shape[0]
-    for l in data:
-        print(l)
+    for l in df_p:
         y = pd.DataFrame(l[1])
         for row in range(0,len(y)): 
-            chore = pd.DataFrame(y.iloc[row].iloc[3:19].value_counts()).reset_index()
+            chore = pd.DataFrame(y.iloc[row].iloc[4:19].value_counts()).reset_index()
             zdrowe = pd.DataFrame(y.iloc[row].iloc[21:].value_counts()).reset_index()
             zdrowe.columns = ['genotyp', 'ilosc']
             chore.columns = ['genotyp', 'ilosc'] 
@@ -111,9 +81,6 @@ if __name__ == "__main__":
                         data = [[i,0]]
                         df = pd.DataFrame(data,columns=['genotyp','ilosc'])
                         chore = pd.concat([chore,df])
-            
-            #print(zdrowe)
-            #print(chore)
 
             zdrowe = zdrowe.sort_values(by = 'genotyp')
             chore = chore.sort_values(by = 'genotyp')
@@ -145,8 +112,41 @@ if __name__ == "__main__":
 
             if p1 < 0.05 or p2 < 0.05 or p3 < 0.05:
                 wynik = pd.concat([wynik,pd.DataFrame([l[0]],[1])])
+    return wynik.value_counts()
 
-        if in_t%100000 == 0:
-            print("Stan sprawdzania",in_t,tt)
-        in_t += 1
-    print(wynik.value_counts())
+if __name__ == "__main__":
+    wyniki = []
+    ch_size = 500000
+    batch_num = 1
+
+    print('Rozdrobnienie pliku')
+
+    for chunk in pd.read_csv('Obrobione_dane.csv', sep='\t',chunksize = ch_size,low_memory=False):
+        chunk.to_csv('TempData'+str(batch_num)+'.csv', index = False)
+
+        batch_num += 1
+
+    in_data = []
+    for i in range(1,batch_num):
+        in_data.append('TempData'+str(i)+'.csv')
+
+    pool = multiprocessing.Pool()
+    pool = multiprocessing.Pool(processes = cpu_count() - 2)
+    
+    print('Rozpoczecie obliczen')
+    start = perf_counter()
+    out_data = pool.map(chunk_al,in_data)
+
+    pool.close()
+    stop = perf_counter()
+    #for num in range(batch_num):
+    #    name = 'TempData'+str(num + 1)+'.csv'
+
+    #    wyniki.append(chunk_al(name))
+
+    print('W czasie: ',stop-start)
+    print('Wynik:')
+    print(out_data)
+
+    f = open('Wynik.txt', 'w')
+    f.writelines(str(out_data))

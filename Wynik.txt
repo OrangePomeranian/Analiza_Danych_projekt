@@ -1,0 +1,64 @@
+[Chr1    25345
+dtype: int64, Chr2    13550
+Chr1    12044
+Chr3       43
+dtype: int64, Chr3    26802
+Chr2    11807
+Chr4      419
+dtype: int64, Chr4    22080
+Chr3    11815
+Chr5      218
+dtype: int64, Chr5    19466
+Chr4     9267
+Chr6      230
+dtype: int64, Chr6    23018
+Chr7     3074
+Chr5     2844
+dtype: int64, Chr7    16432
+Chr8    16312
+Chr9      336
+dtype: int64, Chr9     24816
+Chr8      6450
+Chr10     1355
+dtype: int64, Chr10    11169
+Chr12     8981
+Chr11     8584
+Chr13      502
+dtype: int64, Chr12    16035
+Chr13    14789
+Chr14     8656
+Chr15      304
+dtype: int64, Chr15    14565
+Chr17     7033
+Chr16     6683
+Chr14     3155
+Chr18      378
+dtype: int64, Chr19    11050
+Chr21     6817
+Chr20     6717
+Chr17     4877
+Chr18     4777
+Chr22      434
+Chr23      134
+dtype: int64, Chr25    10365
+Chr23     8342
+Chr26     6562
+Chr28     5403
+Chr21     3264
+Chr24     2124
+Chr27     2090
+Chr22     1312
+Chr29      206
+ChrX        84
+dtype: int64, ChrX             7990
+Chr28            4888
+Chr29            2484
+7180001786369      12
+7180002021652       7
+                 ... 
+7180001840942       1
+7180001840869       1
+7180001840325       1
+7180001839718       1
+7180001869971       1
+Length: 633, dtype: int64]
