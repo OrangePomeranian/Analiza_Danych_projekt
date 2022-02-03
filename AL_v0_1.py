@@ -22,7 +22,7 @@ def import_data(name_s,name_h):
 
     global data
     data = pd.DataFrame()
-    ch_size = 750000
+    ch_size = 1000000
     batch_num = 1
 
     #dzielimy nasz duzy plik na mniejsze fragmenty
@@ -119,6 +119,7 @@ def get_size():
     else:
         f = open('Size.txt')
         size = f.readline()
+        size = int(size)
         f.close()
     return size
 
@@ -126,10 +127,10 @@ def get_size():
 if __name__ == "__main__":
 
     if os.path.isfile('Obrobione_dane.csv') == False:
-        if os.path.isfile('NADIR_sick_genotypes.csv') == True or os.path.isfile('NADIR_healthy_genotypes.csv') == True:
+        if os.path.isfile('NADIR_sick_genotypes.csv') == True and os.path.isfile('NADIR_healthy_genotypes.csv') == True:
             ETA = datetime.datetime.now()
             ETA += datetime.timedelta(minutes = 30)
-            print('Wczytywanie i obrabianie plikw bazowych')
+            print('Wczytywanie i obrabianie plikow bazowych')
             print('ETA: ',ETA.strftime("%H:%M"))
 
             import_data('NADIR_sick_genotypes.csv','NADIR_healthy_genotypes.csv')
@@ -139,7 +140,7 @@ if __name__ == "__main__":
             data.to_csv('Obrobione_dane.csv',sep="\t")
             sz = len(data)
             f = open('Size.txt','w')
-            f.writeline(str(sz))
+            f.writelines(str(sz))
             f.close()
         else:
             os._exit()
