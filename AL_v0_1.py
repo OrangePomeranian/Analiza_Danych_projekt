@@ -126,7 +126,7 @@ def get_size():
 if __name__ == "__main__":
 
     if os.path.isfile('Obrobione_dane.csv') == False:
-        if os.path.isfile('NADIR_sick_genotypes.csv') == False or os.path.isfile('NADIR_healthy_genotypes.csv') == False:
+        if os.path.isfile('NADIR_sick_genotypes.csv') == True or os.path.isfile('NADIR_healthy_genotypes.csv') == True:
             ETA = datetime.datetime.now()
             ETA += datetime.timedelta(minutes = 30)
             print('Wczytywanie i obrabianie plikw bazowych')
