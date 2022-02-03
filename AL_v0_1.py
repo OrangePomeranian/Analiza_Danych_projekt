@@ -6,16 +6,15 @@ author's:
 '''
 
 from itertools import zip_longest
-from multiprocessing import process
 import os
 from os import cpu_count, remove
 import pandas as pd
-import threading
 from scipy.stats import chi2_contingency
 from scipy.stats import chisquare
 import numpy as np
 import multiprocessing
 from time import perf_counter
+import datetime
 
 
 #import danych
@@ -114,9 +113,40 @@ def chunk_al(name):
                 wynik = pd.concat([wynik,pd.DataFrame([l[0]],[1])])
     return wynik.value_counts()
 
+def get_size():
+    if os.path.isfile('Size.txt') == False:
+        size = 6743499
+    else:
+        f = open('Size.txt')
+        size = f.readline()
+        f.close()
+    return size
+
+
 if __name__ == "__main__":
+
+    if os.path.isfile('Obrobione_dane.csv') == False:
+        if os.path.isfile('NADIR_sick_genotypes.csv') == False or os.path.isfile('NADIR_healthy_genotypes.csv') == False:
+            ETA = datetime.datetime.now()
+            ETA += datetime.timedelta(minutes = 30)
+            print('Wczytywanie i obrabianie plikw bazowych')
+            print('ETA: ',ETA.strftime("%H:%M"))
+
+            import_data('NADIR_sick_genotypes.csv','NADIR_healthy_genotypes.csv')
+            for item in data:
+                data = data.replace({item:{'2/2': np.NAN, '0/2' : np.NAN,'1/2' : np.NAN}}).dropna()
+
+            data.to_csv('Obrobione_dane.csv',sep="\t")
+            sz = len(data)
+            f = open('Size.txt','w')
+            f.writeline(str(sz))
+            f.close()
+        else:
+            os._exit()
+
+    size = get_size()
     wyniki = []
-    ch_size = 500000
+    ch_size = size//16
     batch_num = 1
 
     print('Rozdrobnienie pliku')
@@ -131,9 +161,13 @@ if __name__ == "__main__":
         in_data.append('TempData'+str(i)+'.csv')
 
     pool = multiprocessing.Pool()
-    pool = multiprocessing.Pool(processes = cpu_count() - 2)
-    
+    pool = multiprocessing.Pool(processes = cpu_count())
+
+    ETA = datetime.datetime.now()
+    ETA += datetime.timedelta(minutes = size//60)
     print('Rozpoczecie obliczen')
+    print('ETA: ',ETA.strftime("%H:%M"))
+
     start = perf_counter()
     out_data = pool.map(chunk_al,in_data)
 
