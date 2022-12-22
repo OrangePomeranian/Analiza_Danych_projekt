@@ -1,6 +1,6 @@
 '''
 author's:
-@L-daria
+@OrangePomeranian
 @Desert_Fox_Fenek
 @Michello077
 '''
