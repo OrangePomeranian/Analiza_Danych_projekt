@@ -1,4 +1,7 @@
 # Analiza_Danych_projekt
+
+More informations about this project in Projekt Zaliczeniowy PDF.pdf
+
 We received 4 files in .vcf format of Genetic data of healthy and diseased Holstein-Friesian cows.
 
 The files had more than 14.3 million records for diseased individuals and more than 13.8 mln for healthy individuals.
